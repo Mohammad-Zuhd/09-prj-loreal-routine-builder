@@ -15,7 +15,6 @@
     <link rel="stylesheet" href="style.css" />
   </head>
 
-
   <body>
     <header>
       <img src="img/loreal-logo.png" alt="L'Oréal Logo" class="logo" />
@@ -40,7 +39,7 @@
       <section class="product-grid" id="product-grid">
         <!-- Product cards will be loaded here -->
       </section>
-      <aside class="selected-products card">
+      <aside class="selected-products">
         <h2><i class="fa-solid fa-star"></i> Selected Products</h2>
         <ul id="selected-list">
           <!-- Selected products will appear here -->
@@ -55,7 +54,15 @@
         </div>
       </aside>
       <section class="chat-area">
-        <h2>About Your Routine</h2>
+        <h2>
+          About Your Routine
+          <span
+            id="search-indicator"
+            class="search-indicator"
+            title="Includes current web information"
+            >🌐</span
+          >
+        </h2>
         <div id="chat-window">
           <!-- Chat messages will appear here -->
         </div>

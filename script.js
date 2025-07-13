@@ -1,4 +1,3 @@
-// ...existing code...
 // --- L'Oréal Routine Builder JS ---
 const PRODUCTS_URL = "products.json";
 const productGrid = document.getElementById("product-grid");
@@ -12,12 +11,10 @@ const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-input");
 const generateBtn = document.getElementById("generate-routine");
 
-
 let allProducts = [];
 let selectedProducts = [];
 let chatHistory = [];
 let isRTL = false;
-
 
 // --- Load Products ---
 async function loadProducts() {
@@ -29,7 +26,6 @@ async function loadProducts() {
   loadSelectedFromStorage();
   showSuggestions(); // Ensure suggestions are available after load
 }
-
 
 // --- Render Category Dropdown ---
 function renderCategories() {
@@ -46,7 +42,6 @@ function renderCategories() {
       .map((cat) => `<option value="${cat.toLowerCase()}">${cat}</option>`)
       .join("");
 }
-
 
 // --- Render Product Grid ---
 function renderProducts() {
@@ -81,7 +76,6 @@ function renderProducts() {
   });
 }
 
-
 function productCardHTML(p) {
   const selected = selectedProducts.some(
     (sp) => Number(sp.id) === Number(p.id)
@@ -96,7 +90,6 @@ function productCardHTML(p) {
     <div class="description">${p.description}</div>
   </div>`;
 }
-
 
 // --- Product Selection ---
 function toggleProductSelect(id) {
@@ -113,7 +106,6 @@ function toggleProductSelect(id) {
   renderSelected();
 }
 
-
 // Update only the selected state of product cards
 function updateProductCardSelection() {
   document.querySelectorAll(".product-card").forEach((card) => {
@@ -125,7 +117,6 @@ function updateProductCardSelection() {
     }
   });
 }
-
 
 function renderSelected() {
   selectedList.innerHTML = selectedProducts
@@ -142,14 +133,12 @@ function renderSelected() {
   });
 }
 
-
 clearSelectedBtn.addEventListener("click", () => {
   selectedProducts = [];
   saveSelectedToStorage();
   renderProducts();
   renderSelected();
 });
-
 
 // --- LocalStorage ---
 function saveSelectedToStorage() {
@@ -164,14 +153,12 @@ function loadSelectedFromStorage() {
   renderSelected();
 }
 
-
 // --- Category & Search Events ---
 categorySelect.addEventListener("change", renderProducts);
 searchInput.addEventListener("input", () => {
   renderProducts();
   showSuggestions();
 });
-
 
 // --- Live Search Suggestions ---
 function showSuggestions() {
@@ -212,7 +199,6 @@ function showSuggestions() {
   });
 }
 
-
 // Hide suggestions when focus leaves search
 searchInput.addEventListener("blur", () => {
   setTimeout(() => {
@@ -220,7 +206,6 @@ searchInput.addEventListener("blur", () => {
     searchSuggestions.style.display = "none";
   }, 150);
 });
-
 
 // --- Generate Routine Button ---
 generateBtn.addEventListener("click", async () => {
@@ -230,14 +215,36 @@ generateBtn.addEventListener("click", async () => {
     "Generate a personalized routine for these products: " +
       selectedProducts.map((p) => p.name).join(", ")
   );
-  addChatMessage("ai", "AI is thinking...", false); // Show thinking immediately
+
+  // Add thinking message with new structure
+  const thinkingDiv = document.createElement("div");
+  thinkingDiv.className = "msg ai ai-structured thinking-msg";
+  thinkingDiv.innerHTML = `
+    <div class="ai-header">
+      <i class="fa-solid fa-sparkles"></i>
+      <span class="ai-label">AI Beauty Assistant</span>
+    </div>
+    <div class="ai-content">
+      <div class="ai-typing-indicator">
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+      </div>
+    </div>
+  `;
+  chatWindow.appendChild(thinkingDiv);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+
   const routine = await fetchRoutine(selectedProducts);
-  // Remove last 'AI is thinking...' message
-  let msgs = chatWindow.querySelectorAll(".msg.ai");
-  if (msgs.length) chatWindow.removeChild(msgs[msgs.length - 1]);
+
+  // Remove the thinking message
+  const thinkingMsgs = chatWindow.querySelectorAll(".thinking-msg");
+  if (thinkingMsgs.length) {
+    chatWindow.removeChild(thinkingMsgs[thinkingMsgs.length - 1]);
+  }
+
   addChatMessage("ai", routine, true);
 });
-
 
 // --- Chat Form ---
 chatForm.addEventListener("submit", async (e) => {
@@ -246,59 +253,223 @@ chatForm.addEventListener("submit", async (e) => {
   if (!msg) return;
   addChatMessage("user", msg);
   chatInput.value = "";
-  addChatMessage("ai", "AI is thinking...", false);
+
+  // Add thinking message with new structure
+  const thinkingDiv = document.createElement("div");
+  thinkingDiv.className = "msg ai ai-structured thinking-msg";
+  thinkingDiv.innerHTML = `
+    <div class="ai-header">
+      <i class="fa-solid fa-sparkles"></i>
+      <span class="ai-label">AI Beauty Assistant</span>
+    </div>
+    <div class="ai-content">
+      <div class="ai-typing-indicator">
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+      </div>
+    </div>
+  `;
+  chatWindow.appendChild(thinkingDiv);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+
   const aiReply = await fetchChat(msg);
-  let msgs = chatWindow.querySelectorAll(".msg.ai");
-  if (msgs.length) chatWindow.removeChild(msgs[msgs.length - 1]);
+
+  // Remove the thinking message
+  const thinkingMsgs = chatWindow.querySelectorAll(".thinking-msg");
+  if (thinkingMsgs.length) {
+    chatWindow.removeChild(thinkingMsgs[thinkingMsgs.length - 1]);
+  }
+
   addChatMessage("ai", aiReply, true);
 });
 
+// --- AI Response Formatting ---
+function formatAIResponse(text) {
+  if (!text || typeof text !== "string") return text || "";
+
+  try {
+    // Convert markdown-style formatting to HTML
+    let formatted = text;
+
+    // Handle headers (##, ###)
+    formatted = formatted.replace(
+      /^### (.+)$/gm,
+      '<h4 class="ai-subheading">$1</h4>'
+    );
+    formatted = formatted.replace(
+      /^## (.+)$/gm,
+      '<h3 class="ai-heading">$1</h3>'
+    );
+
+    // Handle numbered lists (1. 2. 3.)
+    formatted = formatted.replace(
+      /^(\d+)\.\s+(.+)$/gm,
+      '<div class="ai-list-item"><span class="ai-number">$1.</span> $2</div>'
+    );
+
+    // Handle bullet points (- or *)
+    formatted = formatted.replace(
+      /^[*-]\s+(.+)$/gm,
+      '<div class="ai-bullet-item"><span class="ai-bullet">•</span> $1</div>'
+    );
+
+    // Handle bold text (**text**)
+    formatted = formatted.replace(
+      /\*\*([^*]+)\*\*/g,
+      '<strong class="ai-bold">$1</strong>'
+    );
+
+    // Handle italic text (*text*)
+    formatted = formatted.replace(
+      /\*([^*]+)\*/g,
+      '<em class="ai-italic">$1</em>'
+    );
+
+    // Handle product names and brands (capitalize them and make them stand out)
+    formatted = formatted.replace(
+      /\b(CeraVe|L'Oréal|Neutrogena|Olay|Revlon|Maybelline)\b/gi,
+      '<span class="ai-brand">$1</span>'
+    );
+
+    // Handle routine steps (Morning:, Evening:, Step 1:, etc.)
+    formatted = formatted.replace(
+      /^((?:Morning|Evening|Step \d+|AM|PM):\s*)/gm,
+      '<div class="ai-step-header">$1</div>'
+    );
+
+    // Handle disclaimers and notes (*Note:, *Information, etc.)
+    formatted = formatted.replace(
+      /^\*([^*\n]+)\*$/gm,
+      '<div class="ai-disclaimer">$1</div>'
+    );
+
+    // Convert line breaks to proper spacing
+    formatted = formatted.replace(/\n\n/g, '</p><p class="ai-paragraph">');
+    formatted = '<p class="ai-paragraph">' + formatted + "</p>";
+
+    // Clean up empty paragraphs
+    formatted = formatted.replace(/<p class="ai-paragraph"><\/p>/g, "");
+
+    return formatted;
+  } catch (error) {
+    console.error("Error formatting AI response:", error);
+    // Return original text wrapped in a paragraph if formatting fails
+    return `<p class="ai-paragraph">${text}</p>`;
+  }
+}
 
 function addChatMessage(role, text, animate = false) {
   chatHistory.push({ role, text });
+
   if (role === "ai" && animate) {
-    // Add placeholder
+    // Add placeholder with structured formatting
     const msgDiv = document.createElement("div");
-    msgDiv.className = `msg ${role}`;
-    msgDiv.innerHTML = `<b>AI:</b> <span class="ai-typing">AI is thinking...</span>`;
+    msgDiv.className = `msg ${role} ai-structured`;
+    msgDiv.innerHTML = `
+      <div class="ai-header">
+        <i class="fa-solid fa-sparkles"></i>
+        <span class="ai-label">AI Beauty Assistant</span>
+      </div>
+      <div class="ai-content">
+        <div class="ai-typing-indicator">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+      </div>
+    `;
     chatWindow.appendChild(msgDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
-    // Animate word by word
+
+    // Animate with structured content
     setTimeout(() => {
-      let words = text.split(" ");
-      let i = 0;
-      msgDiv.querySelector(".ai-typing").textContent = "";
-      function typeWord() {
-        if (i < words.length) {
-          msgDiv.querySelector(".ai-typing").textContent +=
-            (i > 0 ? " " : "") + words[i];
-          i++;
-          chatWindow.scrollTop = chatWindow.scrollHeight;
-          setTimeout(typeWord, 40 + Math.random() * 40); // randomize speed a bit
-        }
-      }
-      typeWord();
-    }, 600);
+      const formattedText = formatAIResponse(text);
+      const contentDiv = msgDiv.querySelector(".ai-content");
+
+      // Remove typing indicator
+      contentDiv.innerHTML = "";
+
+      // Add formatted content with fade-in animation
+      contentDiv.innerHTML = formattedText;
+      contentDiv.style.opacity = "0";
+      contentDiv.style.transform = "translateY(10px)";
+
+      // Animate content appearance
+      setTimeout(() => {
+        contentDiv.style.transition = "opacity 0.8s ease, transform 0.8s ease";
+        contentDiv.style.opacity = "1";
+        contentDiv.style.transform = "translateY(0)";
+      }, 300);
+
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }, 1200);
+  } else if (role === "ai") {
+    // Non-animated AI message with structure
+    const formattedText = formatAIResponse(text);
+    chatWindow.innerHTML += `
+      <div class="msg ${role} ai-structured">
+        <div class="ai-header">
+          <i class="fa-solid fa-sparkles"></i>
+          <span class="ai-label">AI Beauty Assistant</span>
+        </div>
+        <div class="ai-content">${formattedText}</div>
+      </div>
+    `;
+    chatWindow.scrollTop = chatWindow.scrollHeight;
   } else {
-    chatWindow.innerHTML += `<div class="msg ${role}"><b>${
-      role === "user" ? "You" : "AI"
-    }:</b> ${text}</div>`;
+    // User message
+    chatWindow.innerHTML += `
+      <div class="msg ${role}">
+        <div class="user-header">
+          <i class="fa-solid fa-user"></i>
+          <span class="user-label">You</span>
+        </div>
+        <div class="user-content">${text}</div>
+      </div>
+    `;
     chatWindow.scrollTop = chatWindow.scrollHeight;
   }
 }
 
-
 // --- AI API Integration ---
-// Use Cloudflare Worker endpoint for OpenAI API
+// Use Cloudflare Worker endpoint for OpenAI API with web search
 const OPENAI_API_URL = "https://openai-proxy.zuhdmudy.workers.dev/";
 
-
-// Generate routine using OpenAI API
+// Generate routine using OpenAI API with web search
 async function fetchRoutine(products) {
-  // Prepare prompt for routine generation
-  const prompt = `Create a personalized beauty routine using these products.\n${products
-    .map((p) => `- ${p.name} (${p.brand}, ${p.category}): ${p.description}`)
-    .join("\n")}`;
+  // Show search indicator for routine generation (always uses web search)
+  const searchIndicator = document.getElementById("search-indicator");
+  if (searchIndicator) {
+    searchIndicator.classList.add("active");
+    searchIndicator.title = "Searching web for current routine information...";
+  }
+
+  // Prepare prompt for routine generation with web search
+  const prompt = `Create a personalized beauty routine using these L'Oréal products. Please search for current information about these products and include any recent reviews, tips, or updates about their usage.
+
+Products:
+${products
+  .map((p) => `- ${p.name} (${p.brand}, ${p.category}): ${p.description}`)
+  .join("\n")}
+
+Please structure your response as follows:
+## Your Personalized L'Oréal Routine
+
+### Morning Routine
+(List morning steps with numbered list)
+
+### Evening Routine  
+(List evening steps with numbered list)
+
+### Key Benefits
+(Use bullet points for product benefits)
+
+### Pro Tips
+(Use bullet points for expert recommendations)
+
+Please include current information about L'Oréal skincare trends, product compatibility, and any recent expert recommendations. Include citations or sources where possible.`;
+
   try {
     const res = await fetch(OPENAI_API_URL, {
       method: "POST",
@@ -306,68 +477,196 @@ async function fetchRoutine(products) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4o", // Model that supports web search
         messages: [
           {
             role: "system",
             content:
-              "You are a helpful skincare and beauty routine assistant for L’Oréal products.",
+              "You are a helpful skincare and beauty routine assistant for L'Oréal products. You have access to current information about beauty trends, product reviews, and expert recommendations. Always include sources or citations when possible, and provide the most up-to-date information about L'Oréal products and skincare routines.\n\nFORMATTING GUIDELINES:\n- Use ## for main headings (e.g., ## Your Personalized Routine)\n- Use ### for subheadings (e.g., ### Morning Routine)\n- Use numbered lists for steps (1. 2. 3.)\n- Use bullet points (-) for product benefits or tips\n- Use **bold** for product names and important terms\n- Use Morning: and Evening: to clearly separate routine times\n- Structure your response with clear sections and easy-to-follow steps",
           },
           { role: "user", content: prompt },
         ],
+        // Enable web search capabilities
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "web_search",
+              description:
+                "Search the web for current information about L'Oréal products, beauty trends, and skincare recommendations",
+              parameters: {
+                type: "object",
+                properties: {
+                  query: {
+                    type: "string",
+                    description:
+                      "The search query for current beauty and skincare information",
+                  },
+                },
+                required: ["query"],
+              },
+            },
+          },
+        ],
+        tool_choice: "auto", // Let the AI decide when to use web search
+        web_search: true, // Enable web search for real-time information
       }),
     });
+
     if (!res.ok) throw new Error("API error");
     const data = await res.json();
-    return (
-      data.choices?.[0]?.message?.content || "Sorry, no routine generated."
-    );
+
+    let response =
+      data.choices?.[0]?.message?.content || "Sorry, no routine generated.";
+
+    // Add disclaimer about current information
+    response +=
+      "\n\n*Note: This routine includes current information and recommendations. Always patch test new products and consult with a dermatologist for personalized advice.*";
+
+    // Update search indicator
+    if (searchIndicator) {
+      searchIndicator.classList.remove("active");
+      searchIndicator.title = "Routine includes current web information";
+    }
+
+    return response;
   } catch (e) {
-    return "Error generating routine.";
+    // Reset search indicator on error
+    if (searchIndicator) {
+      searchIndicator.classList.remove("active");
+      searchIndicator.title = "Includes current web information";
+    }
+
+    console.error("Error generating routine:", e);
+    return "Error generating routine. Please try again.";
   }
 }
 
-
-// Chat follow-up using OpenAI API
+// Chat follow-up using OpenAI API with web search
 async function fetchChat(message) {
+  // Check if the message is asking about current L'Oréal information
+  const needsWebSearch =
+    message.toLowerCase().includes("current") ||
+    message.toLowerCase().includes("latest") ||
+    message.toLowerCase().includes("recent") ||
+    message.toLowerCase().includes("new") ||
+    message.toLowerCase().includes("trend");
+
+  // Show search indicator if web search is needed
+  const searchIndicator = document.getElementById("search-indicator");
+  if (needsWebSearch && searchIndicator) {
+    searchIndicator.classList.add("active");
+    searchIndicator.title = "Searching web for current information...";
+  }
+
   // Build conversation history for context
   const messages = [
     {
       role: "system",
       content:
-        "You are a helpful skincare and beauty routine assistant for L’Oréal products.",
+        "You are a helpful skincare and beauty routine assistant for L'Oréal products. You have access to current information about beauty trends, product reviews, and expert recommendations. When users ask about current information, search the web for the most up-to-date details. Always include sources or citations when providing current information.\n\nFORMATTING GUIDELINES:\n- Use ## for main headings when providing detailed answers\n- Use ### for subheadings to organize information\n- Use numbered lists (1. 2. 3.) for sequential steps or recommendations\n- Use bullet points (-) for benefits, tips, or related information\n- Use **bold** for product names, brands, and key terms\n- Keep responses well-structured and easy to scan\n- Use clear, concise language with proper spacing",
     },
   ];
+
   chatHistory.forEach((msg) => {
     messages.push({ role: msg.role, content: msg.text });
   });
-  messages.push({ role: "user", content: message });
+
+  // Enhance the user message to encourage web search when appropriate
+  let enhancedMessage = message;
+  if (needsWebSearch) {
+    enhancedMessage +=
+      " Please search for current information and include any relevant sources or links.";
+  }
+
+  messages.push({ role: "user", content: enhancedMessage });
+
   try {
+    const requestBody = {
+      model: "gpt-4o",
+      messages,
+      web_search: needsWebSearch, // Enable web search for relevant queries
+    };
+
+    // Add tools for web search if needed
+    if (needsWebSearch) {
+      requestBody.tools = [
+        {
+          type: "function",
+          function: {
+            name: "web_search",
+            description:
+              "Search the web for current information about L'Oréal products, beauty trends, and skincare recommendations",
+            parameters: {
+              type: "object",
+              properties: {
+                query: {
+                  type: "string",
+                  description:
+                    "The search query for current beauty and skincare information",
+                },
+              },
+              required: ["query"],
+            },
+          },
+        },
+      ];
+      requestBody.tool_choice = "auto";
+    }
+
     const res = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages,
-      }),
+      body: JSON.stringify(requestBody),
     });
+
     if (!res.ok) throw new Error("API error");
     const data = await res.json();
-    return data.choices?.[0]?.message?.content || "Sorry, no answer.";
+
+    let response = data.choices?.[0]?.message?.content || "Sorry, no answer.";
+
+    // Add disclaimer for web-searched information
+    if (needsWebSearch) {
+      response +=
+        "\n\n*Information includes current data from web sources. Always verify with official L'Oréal sources.*";
+    }
+
+    // Update search indicator
+    if (searchIndicator) {
+      searchIndicator.classList.remove("active");
+      if (needsWebSearch) {
+        searchIndicator.title = "Response includes current web information";
+      } else {
+        searchIndicator.title = "Includes current web information";
+      }
+    }
+
+    return response;
   } catch (e) {
-    return "Error contacting AI.";
+    // Reset search indicator on error
+    if (searchIndicator) {
+      searchIndicator.classList.remove("active");
+      searchIndicator.title = "Includes current web information";
+    }
+
+    console.error("Error in chat:", e);
+    console.error("Error details:", {
+      message: e.message,
+      stack: e.stack,
+      needsWebSearch,
+      originalMessage: message,
+    });
+    return "Error contacting AI. Please try again.";
   }
 }
-
 
 // --- RTL Support ---
 function setRTL(enabled) {
   isRTL = enabled;
   document.documentElement.dir = enabled ? "rtl" : "ltr";
 }
-
 
 // Example: toggle RTL with keyboard shortcut (Ctrl+R)
 window.addEventListener("keydown", (e) => {
@@ -376,7 +675,6 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
-
 // --- Helpers ---
 // Safely capitalize a string (handles undefined/null)
 function capitalize(str) {
@@ -384,9 +682,5 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-
 // --- Init ---
 loadProducts();
-
-
-// ...existing code...

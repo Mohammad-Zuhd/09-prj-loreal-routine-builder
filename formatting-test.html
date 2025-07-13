@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Formatting Test</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div style="max-width: 600px; margin: 2rem auto; padding: 1rem">
+      <h2>AI Message Formatting Preview</h2>
+
+      <div
+        id="test-chat"
+        style="
+          background: #f9f9f9;
+          border-radius: 8px;
+          padding: 1rem;
+          height: 400px;
+          overflow-y: auto;
+        "
+      >
+        <!-- Test messages will be added here -->
+      </div>
+
+      <button
+        onclick="addTestMessages()"
+        style="
+          margin-top: 1rem;
+          padding: 0.5rem 1rem;
+          background: #ff003b;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+        "
+      >
+        Preview Structured Messages
+      </button>
+    </div>
+
+    <script>
+      function addTestMessages() {
+        const chatDiv = document.getElementById("test-chat");
+
+        // Add user message
+        chatDiv.innerHTML += `
+                <div class="msg user">
+                    <div class="user-header">
+                        <i class="fa-solid fa-user"></i>
+                        <span class="user-label">You</span>
+                    </div>
+                    <div class="user-content">Create a routine for my CeraVe products</div>
+                </div>
+            `;
+
+        // Add structured AI response
+        const aiResponse = `## Your Personalized L'Oréal Routine
+
+### Morning Routine
+1. **CeraVe Foaming Facial Cleanser** - Gently cleanse your face
+2. **CeraVe AM Facial Moisturizing Lotion SPF 30** - Moisturize and protect
+
+### Evening Routine
+1. **CeraVe Hydrating Facial Cleanser** - Remove makeup and impurities
+2. **CeraVe Moisturizing Cream** - Deep overnight hydration
+
+### Key Benefits
+- Gentle formulations suitable for sensitive skin
+- **Ceramides** help restore skin barrier
+- **Hyaluronic acid** provides lasting hydration
+- Non-comedogenic and fragrance-free
+
+### Pro Tips
+- Always patch test new products
+- Apply products to slightly damp skin for better absorption
+- Use sunscreen daily, even indoors
+
+*Note: This routine includes current information and recommendations. Always patch test new products and consult with a dermatologist for personalized advice.*`;
+
+        function formatAIResponse(text) {
+          if (!text) return text;
+
+          let formatted = text;
+
+          // Handle headers
+          formatted = formatted.replace(
+            /^### (.+)$/gm,
+            '<h4 class="ai-subheading">$1</h4>'
+          );
+          formatted = formatted.replace(
+            /^## (.+)$/gm,
+            '<h3 class="ai-heading">$1</h3>'
+          );
+
+          // Handle numbered lists
+          formatted = formatted.replace(
+            /^(\d+)\.\s+(.+)$/gm,
+            '<div class="ai-list-item"><span class="ai-number">$1.</span> $2</div>'
+          );
+
+          // Handle bullet points
+          formatted = formatted.replace(
+            /^[*-]\s+(.+)$/gm,
+            '<div class="ai-bullet-item"><span class="ai-bullet">•</span> $1</div>'
+          );
+
+          // Handle bold text
+          formatted = formatted.replace(
+            /\*\*([^*]+)\*\*/g,
+            '<strong class="ai-bold">$1</strong>'
+          );
+
+          // Handle brands
+          formatted = formatted.replace(
+            /\b(CeraVe|L'Oréal|Neutrogena|Olay|Revlon|Maybelline)\b/gi,
+            '<span class="ai-brand">$1</span>'
+          );
+
+          // Handle disclaimers
+          formatted = formatted.replace(
+            /^\*([^*\n]+)\*$/gm,
+            '<div class="ai-disclaimer">$1</div>'
+          );
+
+          // Convert line breaks
+          formatted = formatted.replace(
+            /\n\n/g,
+            '</p><p class="ai-paragraph">'
+          );
+          formatted = '<p class="ai-paragraph">' + formatted + "</p>";
+          formatted = formatted.replace(/<p class="ai-paragraph"><\/p>/g, "");
+
+          return formatted;
+        }
+
+        chatDiv.innerHTML += `
+                <div class="msg ai ai-structured">
+                    <div class="ai-header">
+                        <i class="fa-solid fa-sparkles"></i>
+                        <span class="ai-label">AI Beauty Assistant</span>
+                    </div>
+                    <div class="ai-content">${formatAIResponse(
+                      aiResponse
+                    )}</div>
+                </div>
+            `;
+      }
+    </script>
+  </body>
+</html>
